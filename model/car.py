@@ -8,10 +8,9 @@ class BaseModel():
         self.velocity = 0
         self.yaw_rate = 0
         self.delta_time = delta_time
-        # LENGTH is x, WIDTH is y. These are used when calculated 
         self.x_length = 4
         self.y_length = 4
-        self.bbox = BoxObject(self.y_length, self.x_length, pos, orientation)
+        self.bbox = BoxObject(self.y_length, self.x_length, self.pos, self.orientation)
 
     def apply_throttle(self, throttle):
         self.velocity += throttle
@@ -37,6 +36,7 @@ class LegoConfig():
     tire_width= 1.4 #cm
     tire_height= 5.6 #cm
     max_speed = 58.433623356770156 # cm/s
+    length= 22 #cm
 
 # Simulate Lego model base on used API and bicyle model
 class LegoModel(BaseModel):
@@ -44,6 +44,9 @@ class LegoModel(BaseModel):
         super().__init__(pos, orientation)
         self.physic = config
         self.delta_time = delta_time
+        self.x_length = self.physic.length
+        self.y_length = self.physic.wheelbase
+        self.bbox = BoxObject(self.y_length, self.x_length, self.pos, self.orientation)
 
     def apply_throttle(self, throttle):
         accel = throttle*self.physic.max_speed - self.velocity
