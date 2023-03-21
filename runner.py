@@ -108,7 +108,7 @@ if __name__ == '__main__':
         car_outline=car_outline,
     )]
 
-    anim = FuncAnimation(fig, step, frames=sim.frames, fargs=fargs, interval=sim.interval, repeat=sim.loop, blit=False)
+    anim = FuncAnimation(fig, step, fargs=fargs, frames=sim.frames, interval=sim.interval, repeat=sim.loop)
     # anim.save(f'{args.testcase}.gif', writer='imagemagick', fps=sim.fps)
 
     plt.grid()
