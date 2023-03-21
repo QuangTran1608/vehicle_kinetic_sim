@@ -9,7 +9,8 @@ import numpy as np
 
 class Simulation:
     def __init__(self):
-        self.dt = 0.1
+        self.fps = 30.0
+        self.dt = 1 / self.fps
         self.interval = self.dt * 10**3
         self.map_size_x = 70
         self.map_size_y = 40
@@ -61,7 +62,7 @@ def step(frame, fargs):
     x = np.append(x, x[0])
     y = np.append(y, y[0])
     fargs.car_outline.set_data(x, y)
-    return fargs.car_outline
+    return fargs.car_outline,
 
 
 if __name__ == '__main__':
@@ -107,8 +108,8 @@ if __name__ == '__main__':
         car_outline=car_outline,
     )]
 
-    anim = FuncAnimation(fig, step, fargs=fargs, frames=sim.frames, interval=sim.interval, repeat=sim.loop)
-    anim.save(f'{args.testcase}.gif')
+    anim = FuncAnimation(fig, step, frames=sim.frames, fargs=fargs, interval=sim.interval, repeat=sim.loop, blit=False)
+    # anim.save(f'{args.testcase}.gif', writer='imagemagick', fps=sim.fps)
 
     plt.grid()
     plt.show()
