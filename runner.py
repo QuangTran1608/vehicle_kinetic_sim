@@ -5,6 +5,7 @@ import math
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
+import common.maths.functions as func
 
 LANE_WIDTH = 75 # cm
 
@@ -55,11 +56,11 @@ def step(frame, fargs):
     current_index = min(np.argmin(dist) + 5, test_data.checkpoint.shape[1]-1)
     target_yaw = math.atan2(test_data.checkpoint[1, current_index] - fargs.car.model.pos.y,
                             test_data.checkpoint[0, current_index] - fargs.car.model.pos.x)
-    yaw_diff = (target_yaw - fargs.car.model.orientation.yaw) / fargs.sim.dt
+    yaw_diff = func.norm_to_range(target_yaw - fargs.car.model.orientation.yaw)
     target_speed = 10
 
     # Drive car and draw car
-    fargs.car.drive(target_speed, yaw_diff)
+    fargs.car.drive(target_speed, yaw_diff / fargs.sim.dt)
     x, y = fargs.car.model.bbox.get_bbox()
     x = np.append(x, x[0])
     y = np.append(y, y[0])

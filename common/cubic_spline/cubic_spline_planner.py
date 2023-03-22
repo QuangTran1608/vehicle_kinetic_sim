@@ -194,7 +194,7 @@ class Spline2D:
         d2 = ddx * ddy + dddx * dy
         yaw = math.atan2(dy, dx)
         k = d0 / (hypot**3)
-        dk = ( (d1 - d2) * (hypot**3) 
+        dk = ( (d1 - d2) * (hypot**3)
               - (3 / 2) * d0 * hypot * hypot_2_q
             ) / (hypot_2**3)
         return yaw, k, dk

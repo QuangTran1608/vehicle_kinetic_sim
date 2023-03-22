@@ -1,5 +1,6 @@
 import math
 from simulator.type import *
+import common.maths.functions as func
 
 
 class BaseModel():
@@ -26,6 +27,7 @@ class BaseModel():
         self.pos.update(self.pos.x + x_change_rate, self.pos.y + y_change_rate)
 
         # For simplicity, yaw_rate and orientation uses the same type. This is not true in real life
-        self.orientation.update(yaw = self.orientation.yaw + self.yaw_rate * self.delta_time)
+        new_yaw = func.norm_to_range(self.orientation.yaw + self.yaw_rate * self.delta_time)
+        self.orientation.update(yaw=new_yaw)
                                 
         self.bbox.update_pos(self.pos, self.orientation)
