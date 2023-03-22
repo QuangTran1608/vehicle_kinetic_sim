@@ -22,4 +22,4 @@ for i_s in s:
 checkpoint = np.array([np.asarray(rx), np.asarray(ry)])
 checkpoint_orientation = np.asarray(ryaw)
 spawn_point = Position(x[0], y[0])
-spawn_ori = Orientation(yaw=ryaw[0])
+spawn_ori = Orientation(yaw=ryaw[1])
