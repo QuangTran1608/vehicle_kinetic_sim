@@ -84,5 +84,5 @@ class BoxObject():
         return np.array([point.x for point in self.box.pts]), \
                np.array([point.y for point in self.box.pts])
 
-    def get_BBox(self):
+    def get_bbox(self):
         return self.unwind_pos()
