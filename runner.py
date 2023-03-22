@@ -7,8 +7,6 @@ from matplotlib.animation import FuncAnimation
 import numpy as np
 import common.maths.functions as func
 
-LANE_WIDTH = 75 # cm
-
 
 class Simulation:
     def __init__(self):
@@ -45,18 +43,18 @@ class Fargs:
 
 def step(frame, fargs):
     # Camera tracks car
-    fargs.ax.set_xlim(fargs.car.model.pos.x - fargs.sim.map_size_x,
-                      fargs.car.model.pos.x + fargs.sim.map_size_x)
-    fargs.ax.set_ylim(fargs.car.model.pos.y - fargs.sim.map_size_y,
-                      fargs.car.model.pos.y + fargs.sim.map_size_y)
+    fargs.ax.set_xlim(fargs.car.model.position.x - fargs.sim.map_size_x,
+                      fargs.car.model.position.x + fargs.sim.map_size_x)
+    fargs.ax.set_ylim(fargs.car.model.position.y - fargs.sim.map_size_y,
+                      fargs.car.model.position.y + fargs.sim.map_size_y)
 
     # Get car's target
-    dist = (test_data.checkpoint[0, :] - fargs.car.model.pos.x)**2 + \
-           (test_data.checkpoint[1, :] - fargs.car.model.pos.y)**2
+    dist = (test_data.checkpoint[0, :] - fargs.car.model.position.x)**2 + \
+           (test_data.checkpoint[1, :] - fargs.car.model.position.y)**2
     current_index = min(np.argmin(dist) + 5, test_data.checkpoint.shape[1]-1)
-    target_yaw = math.atan2(test_data.checkpoint[1, current_index] - fargs.car.model.pos.y,
-                            test_data.checkpoint[0, current_index] - fargs.car.model.pos.x)
-    yaw_diff = func.norm_to_range(target_yaw - fargs.car.model.orientation.yaw)
+    target_yaw = math.atan2(test_data.checkpoint[1, current_index] - fargs.car.model.position.y,
+                            test_data.checkpoint[0, current_index] - fargs.car.model.position.x)
+    yaw_diff = func.norm_to_range(target_yaw - fargs.car.model.rotation.yaw)
     target_speed = 10
 
     # Drive car and draw car
@@ -86,8 +84,8 @@ if __name__ == '__main__':
     yaw_controller = controller(0.1)
 
     vehicle_model = locate(f'model.{args.model}')
-    model = vehicle_model(pos=test_data.spawn_point,
-                          orientation=test_data.spawn_ori)
+    model = vehicle_model(position=test_data.spawn_position,
+                          rotation=test_data.spawn_rotation)
 
     sim = Simulation()
     car = Car(model, speed_controller, yaw_controller)
@@ -96,10 +94,8 @@ if __name__ == '__main__':
     ax = plt.axes()
     ax.set_aspect('equal')
 
-    ax.plot(test_data.checkpoint[0],
-            test_data.checkpoint[1],
-            linewidth=LANE_WIDTH,
-            color='gray')
+    ax.plot(test_data.x_1, test_data.y_1)
+    ax.plot(test_data.x_2, test_data.y_2)
     ax.plot(test_data.checkpoint[0],
             test_data.checkpoint[1],
             linestyle='dashed',
