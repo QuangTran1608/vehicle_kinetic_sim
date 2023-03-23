@@ -13,13 +13,13 @@ class LegoConfig():
 
 # Simulate Lego model base on used API and bicyle model
 class LegoModel(BaseModel):
-    def __init__(self, config=LegoConfig(), pos=Position(0,0), orientation=Orientation(0,0,0), delta_time=0.1):
-        super().__init__(pos, orientation)
+    def __init__(self, config=LegoConfig(), position=Position(0,0), rotation=Rotation(0,0,0), delta_time=0.1):
+        super().__init__(position, rotation)
         self.physic = config
         self.delta_time = delta_time
         self.x_length = self.physic.length
         self.y_length = self.physic.wheelbase
-        self.bbox = BoxObject(self.y_length, self.x_length, self.pos, self.orientation)
+        self.bbox = BoxObject(self.y_length, self.x_length, self.position, self.rotation)
 
     def apply_throttle(self, throttle):
         accel = throttle*self.physic.max_speed - self.velocity
