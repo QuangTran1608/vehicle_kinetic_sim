@@ -12,10 +12,6 @@ drive_motor = Motor(Port.B)
 raw_steer_motor = steer_motor.control.motor
 raw_drive_motor = drive_motor.control.motor
 
-# speed_pct, rel_pos, abs_pos, pwm
-raw_steer_motor.mode([(1, 0), (2, 0), (3, 0), (0, 0)])
-raw_drive_motor.mode([(1, 0), (2, 0), (3, 0), (0, 0)])
-
 STEER_DIR = -1
 DRIVE_DIR = -1
 
@@ -40,8 +36,11 @@ while 1:
     drive_motor.run(DRIVE_DIR * ANGULAR_SPEED * sign)
     if 0 != sign:
         yaw, _, _ = motion.yaw_pitch_roll()
+        # [speed_pct, rel_pos, abs_pos, pwm]
+        steer_encoder = raw_steer_motor.get()
+        drive_encoder = raw_drive_motor.get()
         with open("test_data.txt", 'a') as f:
-            f.write(f"{yaw} {raw_steer_motor.get()} {raw_drive_motor.get()}\n")
+            f.write(f"{yaw} {steer_encoder} {drive_encoder}\n")
 
     if thumb > 50:
         sound.beep(400, 25)
