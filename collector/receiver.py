@@ -38,13 +38,15 @@ while 1:
     drive_motor.run(DRIVE_DIR * ANGULAR_SPEED * sign)
     if 0 != sign:
         yaw, pitch, roll = motion.yaw_pitch_roll()
-        pitch_roll_yaw = [pitch, yaw, roll]     # [x, y, z] deg
-        rates = motion.gyroscope()              # [x, y, z] deg/s
-        accelerations = motion.accelerometer()  # [x, y, z] cm/s^2
-        steer_encoder = raw_steer_motor.get()   # [speed_pct, rel_pos, abs_pos, pwm]
-        drive_encoder = raw_drive_motor.get()   # [speed_pct, rel_pos, abs_pos, pwm]
+        pitch_roll_yaw = (pitch, roll, yaw)     # (x, y, z) deg
+        rates = motion.gyroscope()              # (x, y, z) deg/s
+        accelerations = motion.accelerometer()  # (x, y, z) cm/s^2
+        steer_encoder = tuple(raw_steer_motor.get())   # (speed_pct, rel_pos, abs_pos, pwm)
+        drive_encoder = tuple(raw_drive_motor.get())   # (speed_pct, rel_pos, abs_pos, pwm)
         with open(DATA_LOG, 'a') as f:
-            f.write(f"{pitch_roll_yaw},{accelerations},{steer_encoder},{drive_encoder}\n")
+            f.write("{},{},{},{}\n".format(
+                pitch_roll_yaw, accelerations, steer_encoder, drive_encoder)
+            )
 
     if thumb > 50:
         sound.beep(400, 25)
