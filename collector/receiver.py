@@ -3,6 +3,7 @@ from projects.mpy_robot_tools.rc import RCReceiver, R_STICK_VER, L_STICK_HOR, SE
 from projects.mpy_robot_tools.helpers import PBMotor as Motor
 from projects.mpy_robot_tools.helpers import Port, wait
 from math import pi as PI
+from time import time as now
 
 rcv = RCReceiver(name="robot")
 
@@ -24,6 +25,7 @@ DRIVE_MOTOR_GEAR = 20  # teeth
 DRIVE_OUTPUT_GEAR = 28  # teeth
 ANGULAR_SPEED = 360 * DRIVE_OUTPUT_GEAR * CONST_SPEED / (DRIVE_MOTOR_GEAR * WHEEL_DIAMETER * PI)  # deg/s
 
+DATA_LOG = "test_data_{}.txt".format(now())
 while 1:
     if rcv.is_connected():
         steer_target, speed_target, trim, thumb = rcv.controller_state(L_STICK_HOR, R_STICK_VER, SETTING1, L_TRIGGER)
@@ -41,7 +43,7 @@ while 1:
         accelerations = motion.accelerometer()  # [x, y, z] cm/s^2
         steer_encoder = raw_steer_motor.get()   # [speed_pct, rel_pos, abs_pos, pwm]
         drive_encoder = raw_drive_motor.get()   # [speed_pct, rel_pos, abs_pos, pwm]
-        with open("test_data.txt", 'a') as f:
+        with open(DATA_LOG, 'a') as f:
             f.write(f"{pitch_roll_yaw},{accelerations},{steer_encoder},{drive_encoder}\n")
 
     if thumb > 50:
