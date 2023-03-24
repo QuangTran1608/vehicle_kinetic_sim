@@ -4,8 +4,12 @@ FILE_PREFIX = "test_data_"
 FILE_EXT = ".txt"
 
 def cat(filename):
-    with open(filename, 'r') as file:
-        return file.read()
+    with open(filename, 'r') as f:
+        while True:
+            line = f.readline()
+            if not line:
+                break
+            print(line.strip())
 
 min_timestamp = float("inf")
 latest_file = None
@@ -22,4 +26,4 @@ for file in os.listdir('/'):
         latest_file = file
 
 if latest_file:
-    print(cat(latest_file))
+    cat(latest_file)
