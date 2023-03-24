@@ -13,6 +13,17 @@ drive_motor = Motor(Port.B)
 raw_steer_motor = steer_motor.control.motor
 raw_drive_motor = drive_motor.control.motor
 
+steer_abs_angle = raw_steer_motor.get()[2]
+steer_motor.reset_angle(0)
+steer_motor.run_target(120, -steer_abs_angle, wait=True)
+
+drive_abs_angle = raw_drive_motor.get()[2]
+drive_motor.reset_angle(0)
+drive_motor.run_target(120, -drive_abs_angle, wait=True)
+
+steer_motor.reset_angle(0)
+drive_motor.reset_angle(0)
+
 STEER_DIR = -1
 DRIVE_DIR = -1
 
@@ -32,20 +43,22 @@ while 1:
     else:
         steer_target, speed_target, trim, thumb = (0, 0, 0, 0)
 
-    steer_motor.track_target(STEER_DIR * steer_target * STEER_OUTPUT_GEAR / STEER_MOTOR_GEAR + trim)
+    trim = 0  # we don't need this, since our steering is mechanically calibrated
+
+    steer_motor.run_target(120, STEER_DIR * steer_target * STEER_OUTPUT_GEAR / STEER_MOTOR_GEAR + trim, wait=False)
     # drive_motor.dc(DRIVE_DIR * speed_target)
     sign = 1 if 0 < speed_target else (-1 if speed_target < 0 else 0)
     drive_motor.run(DRIVE_DIR * ANGULAR_SPEED * sign)
     if 0 != sign:
         yaw, pitch, roll = motion.yaw_pitch_roll()
-        pitch_roll_yaw = (pitch, roll, yaw)     # (x, y, z) deg
-        rates = motion.gyroscope()              # (x, y, z) deg/s
-        accelerations = motion.accelerometer()  # (x, y, z) cm/s^2
-        steer_encoder = tuple(raw_steer_motor.get())   # (speed_pct, rel_pos, abs_pos, pwm)
-        drive_encoder = tuple(raw_drive_motor.get())   # (speed_pct, rel_pos, abs_pos, pwm)
+        pitch_roll_yaw = (pitch, roll, yaw)             # (x, y, z) deg
+        gyroscope = motion.gyroscope()                  # (x, y, z) deg/s
+        accelerations = motion.accelerometer()          # (x, y, z) cm/s^2
+        steer_encoder = tuple(raw_steer_motor.get())    # (speed_pct, rel_pos, abs_pos, pwm)
+        drive_encoder = tuple(raw_drive_motor.get())    # (speed_pct, rel_pos, abs_pos, pwm)
         with open(DATA_LOG, 'a') as f:
-            f.write("{},{},{},{}\n".format(
-                pitch_roll_yaw, accelerations, steer_encoder, drive_encoder)
+            f.write("{},{},{},{},{}\n".format(
+                pitch_roll_yaw, gyroscope, accelerations, steer_encoder, drive_encoder)
             )
 
     if thumb > 50:
