@@ -10,8 +10,4 @@ def ls(dir='/', indent=''):
         if stat[0] == 32768:
             print(indent + entry, stat[6])
 
-def cat(filename):
-    with open(filename, 'r') as file:
-        return file.read()
-
 ls()
