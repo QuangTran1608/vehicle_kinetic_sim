@@ -12,12 +12,13 @@ def split(line):
     translation_tbl = str.maketrans('', '', '() ')
     numbers = line.translate(translation_tbl).strip().split(',')
     numbers = [int(number) for number in numbers]
-    pitch_roll_yaw = numbers[0:3]   # (x, y, z) deg
-    gyroscope = numbers[3:6]        # (x, y, z) deg/s
-    accelerations = numbers[6:9]    # (x, y, z) cm/s^2
-    steer_encoder = numbers[9:13]   # (speed_pct, rel_pos, abs_pos, pwm)
-    drive_encoder = numbers[13:17]  # (speed_pct, rel_pos, abs_pos, pwm)
-    return pitch_roll_yaw, gyroscope, accelerations, \
+    timestamp = numbers[0:1]        # (time) sec
+    pitch_roll_yaw = numbers[1:4]   # (x, y, z) deg
+    gyroscope = numbers[4:7]        # (x, y, z) deg/s
+    accelerations = numbers[7:10]   # (x, y, z) cm/s^2
+    steer_encoder = numbers[10:14]  # (speed_pct, rel_pos, abs_pos, pwm)
+    drive_encoder = numbers[14:18]  # (speed_pct, rel_pos, abs_pos, pwm)
+    return timestamp, pitch_roll_yaw, gyroscope, accelerations, \
         steer_encoder, drive_encoder
 
 
@@ -36,7 +37,7 @@ with open(TEST_DATA, 'r') as f:
     line = f.readline()
     assert line
 
-    p_pitch_roll_yaw, _, _, _, p_drive_encoder = split(line)
+    p_timestamp, p_pitch_roll_yaw, _, _, _, p_drive_encoder = split(line)
     p_yaw = np.radians(p_pitch_roll_yaw[2])
 
     ryaw.append(p_yaw)
@@ -53,7 +54,7 @@ with open(TEST_DATA, 'r') as f:
         if not line:
             break
 
-        pitch_roll_yaw, _, _, _, drive_encoder = split(line)
+        timestamp, pitch_roll_yaw, _, _, _, drive_encoder = split(line)
         yaw = np.radians(pitch_roll_yaw[2])
 
         distance = drive_decode(p_drive_encoder, drive_encoder)
