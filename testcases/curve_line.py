@@ -5,7 +5,7 @@ from common.cubic_spline.cubic_spline_planner import Spline2D
 
 x = [-2.5, +0.0, +2.5, +5.0]
 y = [+0.5, -5.0, +5.0, +6.5]
-ds = 0.1  # [m] distance of each interpolated points
+ds = 10  # [m] distance of each interpolated points
 
 x = [xi * 30 for xi in x]
 y = [yi * 30 for yi in y]

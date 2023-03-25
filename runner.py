@@ -20,18 +20,16 @@ class Simulation:
 
 
 class Car:
-    def __init__(self, model, speed_controller, yaw_controller):
+    def __init__(self, model, controller):
         self.model = model
-        self.speed_controller = speed_controller
-        self.yaw_controller = yaw_controller
+        self.controller = controller
 
-    def drive(self, target_speed, yaw_diff):
-        throttle = self.speed_controller.get_control(self.model.velocity, target_speed)
-        steering = self.yaw_controller.get_control(self.model.yaw_rate, yaw_diff)
-        self.model.apply_throttle(throttle)
-        self.model.apply_steer(steering)
+    def drive(self, target_pos, target_yaw):
+        self.controller.set_expected_state(target_pos, target_yaw)
+        control_output = self.controller.get_control()
+        self.model.apply_throttle(control_output[0])
+        self.model.apply_steer(control_output[1+self.controller.horizon])
         self.model.step()
-
 
 @dataclass
 class Fargs:
@@ -51,14 +49,12 @@ def step(frame, fargs):
     # Get car's target
     dist = (test_data.checkpoint[0, :] - fargs.car.model.position.x)**2 + \
            (test_data.checkpoint[1, :] - fargs.car.model.position.y)**2
-    current_index = min(np.argmin(dist) + 5, test_data.checkpoint.shape[1]-1)
-    target_yaw = math.atan2(test_data.checkpoint[1, current_index] - fargs.car.model.position.y,
-                            test_data.checkpoint[0, current_index] - fargs.car.model.position.x)
-    yaw_diff = func.norm_to_range(target_yaw - fargs.car.model.rotation.yaw)
-    target_speed = 10
+    current_index = min(np.argmin(dist) + 1, test_data.checkpoint.shape[1]-1)
+    target_yaw = test_data.checkpoint_orientation[current_index:]
+    target_pos = test_data.checkpoint[:,current_index:]
 
     # Drive car and draw car
-    fargs.car.drive(target_speed, yaw_diff / fargs.sim.dt)
+    fargs.car.drive(target_pos, target_yaw)
     x, y = fargs.car.model.bbox.get_bbox()
     x = np.append(x, x[0])
     y = np.append(y, y[0])
@@ -69,9 +65,9 @@ def step(frame, fargs):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='''Simulation scenario with defined test cases''')
-    parser.add_argument('-t', '--testcase', default='straight_line',
+    parser.add_argument('-t', '--testcase', default='curve_line',
                         help='capture data of a test case defined in testcases folder')
-    parser.add_argument('-c', '--controller', default='BaseController',
+    parser.add_argument('-c', '--controller', default='MPCController',
                         help='controller module')
     parser.add_argument('-m', '--model', default='LegoModel',
                         help='controller module')
@@ -80,15 +76,14 @@ if __name__ == '__main__':
     test_data = locate(f'testcases.{args.testcase}')
 
     controller = locate(f'controller.{args.controller}')
-    speed_controller = controller(0.1)
-    yaw_controller = controller(0.1)
 
     vehicle_model = locate(f'model.{args.model}')
     model = vehicle_model(position=test_data.spawn_position,
                           rotation=test_data.spawn_rotation)
+    controller = controller(model)
 
     sim = Simulation()
-    car = Car(model, speed_controller, yaw_controller)
+    car = Car(model, controller)
 
     fig = plt.figure()
     ax = plt.axes()
