@@ -43,7 +43,8 @@ DRIVE_OUTPUT_GEAR = 28  # teeth
 ANGULAR_SPEED = 360 * DRIVE_OUTPUT_GEAR * CONST_SPEED / (DRIVE_MOTOR_GEAR * WHEEL_DIAMETER * PI)  # deg/s
 
 DATA_LOG = "test_data_{}.txt".format(now())
-jetson_com_port.write("{}\n".format(CAM_RECORDER_START))
+if jetson_com_port:
+    jetson_com_port.write("{}\n".format(CAM_RECORDER_START))
 
 while not button.center.is_pressed():
     if rcv.is_connected():
@@ -71,10 +72,12 @@ while not button.center.is_pressed():
                 timestamp, pitch_roll_yaw, gyroscope, accelerations, steer_encoder, drive_encoder)
             )
 
-    jetson_com_port.write("{}{}\n".format(HUB_TIMESTAMP, timestamp))
+    if jetson_com_port:
+        jetson_com_port.write("{}{}\n".format(HUB_TIMESTAMP, timestamp))
 
     # if thumb > 50:
     #     sound.beep(400, 25)
     #     wait(20)
 
-jetson_com_port.write("{}\n".format(CAM_RECORDER_STOP))
+if jetson_com_port:
+    jetson_com_port.write("{}\n".format(CAM_RECORDER_STOP))
