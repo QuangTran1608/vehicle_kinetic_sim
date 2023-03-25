@@ -1,11 +1,9 @@
 import argparse
+import numpy as np
 from pydoc import locate
 from dataclasses import dataclass
-import math
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
-import numpy as np
-import common.maths.functions as func
 
 
 class Simulation:
@@ -15,7 +13,7 @@ class Simulation:
         self.interval = self.dt * 10**3
         self.map_size_x = 70
         self.map_size_y = 40
-        self.frames = 500
+        self.frames = 600
         self.loop = False
 
 
@@ -30,6 +28,7 @@ class Car:
         self.model.apply_throttle(control_output[0])
         self.model.apply_steer(control_output[1+self.controller.horizon])
         self.model.step()
+
 
 @dataclass
 class Fargs:
@@ -51,7 +50,7 @@ def step(frame, fargs):
            (test_data.checkpoint[1, :] - fargs.car.model.position.y)**2
     current_index = min(np.argmin(dist) + 1, test_data.checkpoint.shape[1]-1)
     target_yaw = test_data.checkpoint_orientation[current_index:]
-    target_pos = test_data.checkpoint[:,current_index:]
+    target_pos = test_data.checkpoint[:, current_index:]
 
     # Drive car and draw car
     fargs.car.drive(target_pos, target_yaw)
