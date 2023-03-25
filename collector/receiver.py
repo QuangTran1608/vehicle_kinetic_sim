@@ -4,11 +4,15 @@ from projects.mpy_robot_tools.helpers import PBMotor as Motor
 from projects.mpy_robot_tools.helpers import Port, wait
 from math import pi as PI
 from time import time as now
-from jetson.messages import (
-    CAM_RECORDER_START,
-    CAM_RECORDER_STOP,
-    HUB_TIMESTAMP
-)
+
+# from jetson.messages import (
+#     CAM_RECORDER_START,
+#     CAM_RECORDER_STOP,
+#     HUB_TIMESTAMP
+# )
+CAM_RECORDER_START = "A01"
+CAM_RECORDER_STOP = "A02"
+HUB_TIMESTAMP = "A03"
 
 rcv = RCReceiver(name="robot")
 jetson_com_port = USB_VCP(0)
