@@ -1,11 +1,17 @@
-from hub import motion, sound
+from hub import motion, sound, button, USB_VCP
 from projects.mpy_robot_tools.rc import RCReceiver, R_STICK_VER, L_STICK_HOR, SETTING1, L_TRIGGER
 from projects.mpy_robot_tools.helpers import PBMotor as Motor
 from projects.mpy_robot_tools.helpers import Port, wait
 from math import pi as PI
 from time import time as now
+from jetson.messages import (
+    CAM_RECORDER_START,
+    CAM_RECORDER_STOP,
+    HUB_TIMESTAMP
+)
 
 rcv = RCReceiver(name="robot")
+jetson_com_port = USB_VCP(0)
 
 steer_motor = Motor(Port.A)
 drive_motor = Motor(Port.B)
@@ -37,7 +43,9 @@ DRIVE_OUTPUT_GEAR = 28  # teeth
 ANGULAR_SPEED = 360 * DRIVE_OUTPUT_GEAR * CONST_SPEED / (DRIVE_MOTOR_GEAR * WHEEL_DIAMETER * PI)  # deg/s
 
 DATA_LOG = "test_data_{}.txt".format(now())
-while 1:
+jetson_com_port.write("{}\n".format(CAM_RECORDER_START))
+
+while not button.center.is_pressed():
     if rcv.is_connected():
         steer_target, speed_target, trim, thumb = rcv.controller_state(L_STICK_HOR, R_STICK_VER, SETTING1, L_TRIGGER)
     else:
@@ -49,6 +57,8 @@ while 1:
     # drive_motor.dc(DRIVE_DIR * speed_target)
     sign = 1 if 0 < speed_target else (-1 if speed_target < 0 else 0)
     drive_motor.run(DRIVE_DIR * ANGULAR_SPEED * sign)
+
+    timestamp = now()
     if 0 != sign:
         yaw, pitch, roll = motion.yaw_pitch_roll()
         pitch_roll_yaw = (pitch, roll, yaw)             # (x, y, z) deg
@@ -57,10 +67,14 @@ while 1:
         steer_encoder = tuple(raw_steer_motor.get())    # (speed_pct, rel_pos, abs_pos, pwm)
         drive_encoder = tuple(raw_drive_motor.get())    # (speed_pct, rel_pos, abs_pos, pwm)
         with open(DATA_LOG, 'a') as f:
-            f.write("{},{},{},{},{}\n".format(
-                pitch_roll_yaw, gyroscope, accelerations, steer_encoder, drive_encoder)
+            f.write("({}),{},{},{},{},{}\n".format(
+                timestamp, pitch_roll_yaw, gyroscope, accelerations, steer_encoder, drive_encoder)
             )
 
-    if thumb > 50:
-        sound.beep(400, 25)
-        wait(20)
+    jetson_com_port.write("{}{}\n".format(HUB_TIMESTAMP, timestamp))
+
+    # if thumb > 50:
+    #     sound.beep(400, 25)
+    #     wait(20)
+
+jetson_com_port.write("{}\n".format(CAM_RECORDER_STOP))
