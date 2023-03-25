@@ -1,24 +1,20 @@
+from projects.mpy_robot_tools.rc import R_STICK_VER, L_STICK_HOR, SETTING1, L_TRIGGER
+from projects.mpy_robot_tools.rc import RCReceiver
+from projects.mpy_robot_tools.helpers import PBMotor
+from projects.mpy_robot_tools.helpers import Port
 from hub import motion, sound, button, USB_VCP
-from projects.mpy_robot_tools.rc import RCReceiver, R_STICK_VER, L_STICK_HOR, SETTING1, L_TRIGGER
-from projects.mpy_robot_tools.helpers import PBMotor as Motor
-from projects.mpy_robot_tools.helpers import Port, wait
 from math import pi as PI
 from time import time as now
 
-# from jetson.messages import (
-#     CAM_RECORDER_START,
-#     CAM_RECORDER_STOP,
-#     HUB_TIMESTAMP
-# )
-CAM_RECORDER_START = "A01"
-CAM_RECORDER_STOP = "A02"
-HUB_TIMESTAMP = "A03"
+HUB_TIMESTAMP = "H01"
+CAM_RECORDER_START = "H02"
+CAM_RECORDER_STOP = "H03"
 
 rcv = RCReceiver(name="robot")
 jetson_com_port = USB_VCP(0)
 
-steer_motor = Motor(Port.A)
-drive_motor = Motor(Port.B)
+steer_motor = PBMotor(Port.A)
+drive_motor = PBMotor(Port.B)
 
 raw_steer_motor = steer_motor.control.motor
 raw_drive_motor = drive_motor.control.motor
@@ -79,9 +75,8 @@ while not button.center.is_pressed():
     if jetson_com_port:
         jetson_com_port.write("{}{}\n".format(HUB_TIMESTAMP, timestamp))
 
-    # if thumb > 50:
-    #     sound.beep(400, 25)
-    #     wait(20)
+    if thumb > 50:
+        sound.beep(400, 25)
 
 if jetson_com_port:
     jetson_com_port.write("{}\n".format(CAM_RECORDER_STOP))

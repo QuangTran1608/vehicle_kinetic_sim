@@ -4,10 +4,10 @@ import cv2
 from time import time as now
 from time import sleep
 from serial import Serial
-from messages import (
+from collector.receiver import (
+    HUB_TIMESTAMP,
     CAM_RECORDER_START,
     CAM_RECORDER_STOP,
-    HUB_TIMESTAMP
 )
 
 
