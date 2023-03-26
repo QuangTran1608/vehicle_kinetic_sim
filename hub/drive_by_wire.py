@@ -1,16 +1,19 @@
 from projects.mpy_robot_tools.helpers import (
-    PBMotor, PBUltrasonicSensor, Port, wait 
+    PBMotor, PBUltrasonicSensor, Port
 )
 from hub import button, motion, USB_VCP
-from time import time as now
+import time
 
+END_MSG_SYMBOL = "<<\n"
 HUB_TIMESTAMP = "H01"
-JETSON_CONTROLS = "J01"
+HUB_TERMINATE = "H02"
+JETSON_CTRLS = "J01"
 
 REF_SPEED = 10  # cm/s
 SAFETY_DIST = 5.  # cm
 DEFAULT_TOLERANCE = 3.  # cm
 TOLERANCE_DIST = DEFAULT_TOLERANCE
+
 
 def main():
     jetson_com_port = USB_VCP(0)
@@ -30,8 +33,16 @@ def main():
     steer_motor.reset_angle(0)
     drive_motor.reset_angle(0)
 
+    p_t = None
     while not button.center.is_pressed():
-        wait(100)
+        now = time.time_ns()
+        if not p_t:
+            # skip first iteration
+            p_t = now
+            continue
+
+        dt = (now - p_t) / 1000000  # in milliseconds
+        p_t = now
 
         msg_in = None
         try:
@@ -52,7 +63,14 @@ def main():
 
         obstacle_dist = uss_sensor.distance()
 
-        jetson_com_port.write("{}{}\n".format(HUB_TIMESTAMP, timestamp))
+        jetson_com_port.write("{}{}{}".format(
+            HUB_TIMESTAMP, timestamp, END_MSG_SYMBOL
+        ))
+
+    jetson_com_port.write("{}{}".format(
+        HUB_TERMINATE, END_MSG_SYMBOL
+    ))
+
 
 if __name__ == '__main__':
     main()

@@ -1,53 +1,90 @@
-import os
 import cv2
 
-from time import time as now
-from time import sleep
 from serial import Serial
-from hub.drive_by_wire import (
-    HUB_TIMESTAMP
-)
+
+MSG_HEADER_LEN = 3
+MSG_FOOTER_LEN = 3
+END_MSG_SYMBOL = b"<<\n"
+HUB_TIMESTAMP = b"H01"
+HUB_TERMINATE = b"H02"
+
+
+class Logger:
+    def __init__(self):
+        self.f = open('log.txt', 'w')
+
+    def write(self, msg):
+        self.f.write(msg)
+
+    def __del__(self):
+        self.f.close()
+
+
+log = Logger()
+
+
+def decode_msg(msg_in):
+    msg_out = msg_in.decode("utf-8")
+    # log.write(msg_out)
+    msg_out = msg_in.strip()[MSG_HEADER_LEN:(len(msg_in) - MSG_FOOTER_LEN)]
+    # log.write(msg_out)
+    return str(msg_out)
 
 
 def main():
-    hub_com_port = Serial('/dev/ttyACM0', 115200, timeout=0.050)
+    try:
+        hub_com_port = Serial('/dev/ttyACM0', 115200, timeout=0.050)
+    except:
+        hub_com_port = Serial('/dev/ttyACM1', 115200, timeout=0.050)
+
     if not hub_com_port.is_open:
-        print("Could not connect Lego hub on COM port!")
+        log.write("Could not connect Lego hub on COM port!")
         return
 
-    video_capture = cv2.VideoCapture(0)
+    camset = "nvarguscamerasrc ! nvvidconv ! video/x-raw, width=640, height=480, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
+    video_capture = cv2.VideoCapture(camset, cv2.CAP_GSTREAMER)
     if not (video_capture and video_capture.isOpened()):
-        print("Could not open camera!")
+        log.write("Could not open camera!")
         return
 
     while True:
-        sleep(0.02)
-
         ret, frame = video_capture.read()
+        if ret:
+            # TODO: do something with the video frame here
+            pass
 
         msg_in = None
         while hub_com_port.in_waiting:
-            msg_in = hub_com_port.readline().strip()
-            print(msg_in.decode("utf-8"))
+            msg_in = hub_com_port.readline()
             hub_com_port.reset_input_buffer()
 
-        len_msg_in = len(msg_in)
-        if not (0 < len_msg_in):
+        if not msg_in:
             continue
 
-        if msg_in.startswith(HUB_TIMESTAMP):
+        if not msg_in.endswith(END_MSG_SYMBOL):
+            continue
+
+        if msg_in.startswith(HUB_TERMINATE):
+            log.write("Stop recording")
+            msg_in = decode_msg(msg_in)
+            cv2.destroyAllWindows()
+            video_capture.release()
+            video_capture = None
+
+        elif msg_in.startswith(HUB_TIMESTAMP):
+            log.write("Receive timestamp")
+            msg_in = decode_msg(msg_in)
             ts_begin = len(HUB_TIMESTAMP)
-            ts_end = len_msg_in
+            ts_end = len(msg_in)
             while not msg_in[ts_end - 1].isdigit():
                 ts_end = ts_end - 1
 
             if not (ts_begin < ts_end):
+                log.write("Empty timestamp")
                 continue
 
-            hub_timestamp = int(msg_in[ts_begin:ts_end])
-
-    cv2.destroyAllWindows()
-    video_capture.release()
+            timestamp = msg_in[ts_begin:ts_end]
+            log.write(timestamp)
 
 
 if __name__ == '__main__':
