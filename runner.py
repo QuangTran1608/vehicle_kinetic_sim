@@ -15,7 +15,7 @@ class Simulation:
         self.interval = self.dt * 10**3
         self.map_size_x = 70
         self.map_size_y = 40
-        self.frames = 500
+        self.frames = 1000
         self.loop = False
 
 
