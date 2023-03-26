@@ -29,9 +29,10 @@ log = Logger()
 
 def decode_msg(msg_in):
     msg_out = msg_in.decode("utf-8")
-    log.write(msg_out)
+    # log.write(msg_out)
     msg_out = msg_in.strip()[MSG_HEADER_LEN:(len(msg_in) - MSG_FOOTER_LEN)]
-    log.write(msg_out)
+    # log.write(msg_out)
+    return str(msg_out)
 
 
 def main():
@@ -48,7 +49,8 @@ def main():
     record_dir = "/dev/camera_frames_{}".format(start_time)
 
     os.makedirs(record_dir, exist_ok=True)
-    video_capture = None
+    log.write(CAM_RECORDER_START)
+    video_capture = cv2.VideoCapture(0)
 
     while True:
         sleep(0.02)
@@ -64,21 +66,16 @@ def main():
         if not msg_in.endswith(END_MSG_SYMBOL):
             continue
 
-        if msg_in.startswith(CAM_RECORDER_START):
+        if msg_in.startswith(CAM_RECORDER_STOP):
+            log.write("Stop recording")
             msg_in = decode_msg(msg_in)
-            log.write(CAM_RECORDER_START)
-            video_capture = cv2.VideoCapture(0)
-
-        elif msg_in.startswith(CAM_RECORDER_STOP):
-            msg_in = decode_msg(msg_in)
-            log.write(CAM_RECORDER_STOP)
             cv2.destroyAllWindows()
             video_capture.release()
             video_capture = None
 
         elif msg_in.startswith(HUB_TIMESTAMP):
+            log.write("Receive timestamp")
             msg_in = decode_msg(msg_in)
-            log.write(HUB_TIMESTAMP)
             ts_begin = len(HUB_TIMESTAMP)
             ts_end = len(msg_in)
             while not msg_in[ts_end - 1].isdigit():
