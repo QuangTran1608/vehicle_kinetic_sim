@@ -44,7 +44,7 @@ def main():
         log.write("Could not connect Lego hub on COM port!")
         return
 
-    camset = "nvarguscamerasrc ! nvvidconv ! video/x-raw, width=540, height=360, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
+    camset = "nvarguscamerasrc ! nvvidconv ! video/x-raw, width=640, height=480, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
     video_capture = cv2.VideoCapture(camset, cv2.CAP_GSTREAMER)
     if not (video_capture and video_capture.isOpened()):
         return
