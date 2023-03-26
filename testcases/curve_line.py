@@ -31,9 +31,7 @@ x_2 = np.zeros(slen)
 y_1 = np.zeros(slen)
 y_2 = np.zeros(slen)
 for i in range(slen):
-    trans = Transform()
-    trans.position = Position(rx[i], ry[i])
-    trans.rotation = Rotation(yaw=ryaw[i])
+    trans = Transform(Position(rx[i], ry[i]), Rotation(yaw=ryaw[i]))
     ltrans = trans.translate(0.0, -HALF_LANE_WIDTH, in_place=False)
     rtrans = trans.translate(0.0, +HALF_LANE_WIDTH, in_place=False)
     x_1[i] = ltrans.position.x

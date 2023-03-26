@@ -94,9 +94,9 @@ class BoxObject():
 
 
 class Transform():
-    def __init__(self):
-        self._position = Position()
-        self._rotation = Rotation()
+    def __init__(self, position=Position(), rotation=Rotation()):
+        self._position = position
+        self._rotation = rotation
 
     @property
     def position(self):
