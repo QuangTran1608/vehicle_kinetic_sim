@@ -6,23 +6,35 @@ from time import sleep
 from serial import Serial
 
 MSG_HEADER_LEN = 3
+MSG_FOOTER_LEN = 3
 END_MSG_SYMBOL = b"<<\n"
 HUB_TIMESTAMP = b"H01"
 CAM_RECORDER_START = b"H02"
 CAM_RECORDER_STOP = b"H03"
 
+
 class Logger:
     def __init__(self):
         self.f = open('log.txt', 'w')
+
     def write(self, msg):
         self.f.write(msg)
+
     def __del__(self):
         self.f.close()
 
 
-def main():
-    log = Logger()
+log = Logger()
 
+
+def decode_msg(msg_in):
+    msg_out = msg_in.decode("utf-8")
+    log.write(msg_out)
+    msg_out = msg_in.strip()[MSG_HEADER_LEN:(len(msg_in) - MSG_FOOTER_LEN)]
+    log.write(msg_out)
+
+
+def main():
     try:
         hub_com_port = Serial('/dev/ttyACM0', 115200, timeout=0.050)
     except:
@@ -49,52 +61,47 @@ def main():
         if not msg_in:
             continue
 
-        if msg_in.endswith(END_MSG_SYMBOL):
-            msg_in = msg_in.decode("utf-8")
-            log.write(msg_in)
+        if not msg_in.endswith(END_MSG_SYMBOL):
+            continue
 
-            msg_in = msg_in.strip()[MSG_HEADER_LEN:(len(msg_in) - 2)]
-            log.write(msg_in)
+        if msg_in.startswith(CAM_RECORDER_START):
+            msg_in = decode_msg(msg_in)
+            log.write(CAM_RECORDER_START)
+            video_capture = cv2.VideoCapture(0)
 
-            len_msg_in = len(msg_in)
-            if not (0 < len_msg_in):
+        elif msg_in.startswith(CAM_RECORDER_STOP):
+            msg_in = decode_msg(msg_in)
+            log.write(CAM_RECORDER_STOP)
+            cv2.destroyAllWindows()
+            video_capture.release()
+            video_capture = None
+
+        elif msg_in.startswith(HUB_TIMESTAMP):
+            msg_in = decode_msg(msg_in)
+            log.write(HUB_TIMESTAMP)
+            ts_begin = len(HUB_TIMESTAMP)
+            ts_end = len(msg_in)
+            while not msg_in[ts_end - 1].isdigit():
+                ts_end = ts_end - 1
+
+            log.write('after while')
+            if not (ts_begin < ts_end):
                 continue
 
-            if msg_in.startswith(CAM_RECORDER_START):
-                log.write(CAM_RECORDER_START)
-                video_capture = cv2.VideoCapture(0)
+            log.write('after ts check')
+            timestamp = msg_in[ts_begin:ts_end]
+            if not (video_capture and video_capture.isOpened()):
+                continue
 
-            elif msg_in.startswith(CAM_RECORDER_STOP):
-                log.write(CAM_RECORDER_STOP)
-                cv2.destroyAllWindows()
-                video_capture.release()
-                video_capture = None
+            log.write('video is opened')
+            ret, frame = video_capture.read()
+            if not ret:
+                continue
 
-            elif msg_in.startswith(HUB_TIMESTAMP):
-                log.write(HUB_TIMESTAMP)
-                ts_begin = len(HUB_TIMESTAMP)
-                ts_end = len_msg_in
-                while not msg_in[ts_end - 1].isdigit():
-                    ts_end = ts_end - 1
-
-                log.write('after while')
-                if not (ts_begin < ts_end):
-                    continue
-
-                log.write('after ts check')
-                timestamp = msg_in[ts_begin:ts_end]
-                if not (video_capture and video_capture.isOpened()):
-                    continue
-
-                log.write('video is opened')
-                ret, frame = video_capture.read()
-                if not ret:
-                    continue
-
-                log.write('frame captured')
-                basename = timestamp
-                base_path = os.path.join(record_dir, basename)
-                cv2.imwrite('{}.jpg'.format(base_path), frame)
+            log.write('frame captured')
+            basename = timestamp
+            base_path = os.path.join(record_dir, basename)
+            cv2.imwrite('{}.jpg'.format(base_path), frame)
 
 
 if __name__ == '__main__':
