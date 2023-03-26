@@ -2,14 +2,20 @@ from projects.mpy_robot_tools.helpers import (
     PBMotor, PBUltrasonicSensor, Port
 )
 from hub import button, motion, USB_VCP
+from math import pi as PI
 import time
 
-END_MSG_SYMBOL = "<<\n"
+END_HUB_MSG_SYMBOL = "<<\n"
 HUB_TIMESTAMP = "H01"
 HUB_TERMINATE = "H02"
-JETSON_CTRLS = "J01"
+HUB_DYNAMICS = "H03"
+HUB_USS_DIST = "H04"
+
+END_JET_MSG_SYMBOL = "<<"
+JET_CTRLS = "J1"
 
 REF_SPEED = 10  # cm/s
+ALERT_DIST = 50  # cm
 SAFETY_DIST = 5.  # cm
 DEFAULT_TOLERANCE = 3.  # cm
 TOLERANCE_DIST = DEFAULT_TOLERANCE
@@ -23,7 +29,14 @@ STEER_OUTPUT_GEAR = 20  # teeth
 WHEEL_DIAMETER = 5.6  # cm
 DRIVE_MOTOR_GEAR = 20  # teeth
 DRIVE_OUTPUT_GEAR = 28  # teeth
-ANGULAR_SPEED = 360 * DRIVE_OUTPUT_GEAR * CONST_SPEED / (DRIVE_MOTOR_GEAR * WHEEL_DIAMETER * PI)  # deg/s
+
+
+def calc_motor_angular_speed(speed):
+    return 360 * DRIVE_OUTPUT_GEAR * speed / (DRIVE_MOTOR_GEAR * WHEEL_DIAMETER * PI)  # deg/s
+
+
+def drive_decode(prev, curr):
+    return DRIVE_DIR * (curr[1] - prev[1]) * WHEEL_DIAMETER * PI / 360
 
 
 def main():
@@ -48,19 +61,20 @@ def main():
     drive_motor.reset_angle(0)
 
     p_drive_encoder = None
-    p_t = None
+    p_timestamp = None
 
     while not button.center.is_pressed():
-        now = time.time_ns()
-        if not p_t:
+        timestamp = time.ticks_ms()
+        if not p_timestamp:
             # skip first iteration
             p_drive_encoder = tuple(raw_drive_motor.get())
-            p_t = now
+            p_timestamp = timestamp
             continue
 
-        dt = (now - p_t) / 1000000  # in milliseconds
-        p_t = now
+        dt = time.ticks_diff(timestamp, p_timestamp)  # milliseconds
+        dt /= 1000.  # seconds
 
+        # receive controls from Jetson
         msg_in = None
         try:
             # Read 10 bytes from buffer
@@ -71,25 +85,33 @@ def main():
         except Exception as ex:
             print(ex)
 
-        timestamp = now()
+        if msg_in and msg_in.endswith(END_JET_MSG_SYMBOL):
+            if msg_in.startswith(JET_CTRLS):
+                steering = int(msg_in[2:5])
+                throttle = int(msg_in[5:8])
+                steer_motor.dc(steering)
+                drive_motor.dc(throttle)
 
-        yaw, pitch, roll = motion.yaw_pitch_roll()
-        pitch_roll_yaw = (pitch, roll, yaw)     # (x, y, z) deg
-        gyroscope = motion.gyroscope()          # (x, y, z) deg/s
-        accelerations = motion.accelerometer()  # (x, y, z) cm/s^2
-        # steer_encoder = tuple(raw_steer_motor.get())    # (speed_pct, rel_pos, abs_pos, pwm)
-        drive_encoder = tuple(raw_drive_motor.get())    # (speed_pct, rel_pos, abs_pos, pwm)
-
-        obstacle_dist = uss_sensor.distance()
-
-        jetson_com_port.write("{}{}{}".format(
-            HUB_TIMESTAMP, timestamp, END_MSG_SYMBOL
+        # send car dynamics to Jetson
+        yaw, _, _ = motion.yaw_pitch_roll()
+        drive_encoder = tuple(raw_drive_motor.get())  # (speed_pct, rel_pos, abs_pos, pwm)
+        travel_dist = drive_decode(p_drive_encoder, drive_encoder)
+        velocity = travel_dist / dt  # cm/s
+        jetson_com_port.write("{}{},{}{}".format(
+            HUB_DYNAMICS, yaw, velocity, END_HUB_MSG_SYMBOL
         ))
 
+        obstacle_dist = uss_sensor.distance() / 10.  # cm
+        if obstacle_dist < ALERT_DIST:
+            jetson_com_port.write("{}{}{}".format(
+                HUB_USS_DIST, obstacle_dist, END_HUB_MSG_SYMBOL
+            ))
+
         p_drive_encoder = drive_encoder
+        p_timestamp = timestamp
 
     jetson_com_port.write("{}{}".format(
-        HUB_TERMINATE, END_MSG_SYMBOL
+        HUB_TERMINATE, END_HUB_MSG_SYMBOL
     ))
 
 

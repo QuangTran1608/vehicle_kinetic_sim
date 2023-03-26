@@ -1,12 +1,19 @@
 import cv2
+import numpy as np
 
 from serial import Serial
 
 MSG_HEADER_LEN = 3
 MSG_FOOTER_LEN = 3
-END_MSG_SYMBOL = b"<<\n"
+
+END_HUB_MSG_SYMBOL = b"<<\n"
 HUB_TIMESTAMP = b"H01"
 HUB_TERMINATE = b"H02"
+HUB_DYNAMICS = b"H03"
+HUB_USS_DIST = b"H04"
+
+END_JET_MSG_SYMBOL = "<<"
+JET_CTRLS = "J1"
 
 
 class Logger:
@@ -23,7 +30,7 @@ class Logger:
 log = Logger()
 
 
-def decode_msg(msg_in):
+def decode_hub_msg(msg_in):
     msg_out = msg_in.decode("utf-8")
     # log.write(msg_out)
     msg_out = msg_in.strip()[MSG_HEADER_LEN:(len(msg_in) - MSG_FOOTER_LEN)]
@@ -34,7 +41,8 @@ def decode_msg(msg_in):
 def main():
     try:
         hub_com_port = Serial('/dev/ttyACM0', 115200, timeout=0.050)
-    except:
+    except Exception as ex:
+        log.write(ex)
         hub_com_port = Serial('/dev/ttyACM1', 115200, timeout=0.050)
 
     if not hub_com_port.is_open:
@@ -50,9 +58,10 @@ def main():
     while True:
         ret, frame = video_capture.read()
         if ret:
-            # TODO: do something with the video frame here
+            # TODO: process video frame here (asynchronously ???)
             pass
 
+        # receive data from Lego hub
         msg_in = None
         while hub_com_port.in_waiting:
             msg_in = hub_com_port.readline()
@@ -61,30 +70,47 @@ def main():
         if not msg_in:
             continue
 
-        if not msg_in.endswith(END_MSG_SYMBOL):
+        if not msg_in.endswith(END_HUB_MSG_SYMBOL):
             continue
 
         if msg_in.startswith(HUB_TERMINATE):
-            log.write("Stop recording")
-            msg_in = decode_msg(msg_in)
+            log.write("Stop everything")
             cv2.destroyAllWindows()
             video_capture.release()
             video_capture = None
 
-        elif msg_in.startswith(HUB_TIMESTAMP):
-            log.write("Receive timestamp")
-            msg_in = decode_msg(msg_in)
-            ts_begin = len(HUB_TIMESTAMP)
-            ts_end = len(msg_in)
-            while not msg_in[ts_end - 1].isdigit():
-                ts_end = ts_end - 1
+        elif msg_in.startswith(HUB_DYNAMICS):
+            log.write("Receive car dynamics")
+            dynamics = decode_hub_msg(msg_in)
+            log.write(dynamics)
 
-            if not (ts_begin < ts_end):
-                log.write("Empty timestamp")
+            sep_index = dynamics.find(',')
+            if -1 == sep_index:
+                log.write("Error: Separator not found")
                 continue
 
-            timestamp = msg_in[ts_begin:ts_end]
-            log.write(timestamp)
+            yaw = np.radians(int(dynamics[2:sep_index]))  # rad
+            log.write("Yaw: {}".format(yaw))
+
+            velocity = float(dynamics[sep_index+1:])  # cm/s
+            log.write("Velocity: {}".format(velocity))
+
+        elif msg_in.startswith(HUB_USS_DIST):
+            log.write("Receive USS distance")
+            obstacle_dist = decode_hub_msg(msg_in)
+            log.write(obstacle_dist)
+
+            obstacle_dist = float(obstacle_dist)  # cm
+
+        # TODO: make decision
+        steering = 0  # -99 <= steering <= 99
+        throttle = 0  # -99 <= throttle <= 99
+
+        # send controls to Lego hub
+        steering_str = str(steering).zfill(3)
+        throttle_str = str(throttle).zfill(3)
+        ctrls = JET_CTRLS + steering_str + throttle_str + END_JET_MSG_SYMBOL
+        hub_com_port.write(ctrls.encode("utf-8"))
 
 
 if __name__ == '__main__':
