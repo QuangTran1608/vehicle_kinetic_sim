@@ -8,8 +8,7 @@ from time import time as now
 
 END_MSG_SYMBOL = "<<\n"
 HUB_TIMESTAMP = "H01"
-CAM_RECORDER_START = "H02"
-CAM_RECORDER_STOP = "H03"
+CAM_RECORDER_STOP = "H02"
 
 rcv = RCReceiver(name="robot")
 jetson_com_port = USB_VCP(0)
@@ -44,9 +43,6 @@ DRIVE_OUTPUT_GEAR = 28  # teeth
 ANGULAR_SPEED = 360 * DRIVE_OUTPUT_GEAR * CONST_SPEED / (DRIVE_MOTOR_GEAR * WHEEL_DIAMETER * PI)  # deg/s
 
 DATA_LOG = "test_data_{}.txt".format(now())
-if jetson_com_port:
-    jetson_com_port.write("{}{}".format(CAM_RECORDER_START, END_MSG_SYMBOL))
-
 while not button.center.is_pressed():
     if rcv.is_connected():
         steer_target, speed_target, trim, thumb = rcv.controller_state(L_STICK_HOR, R_STICK_VER, SETTING1, L_TRIGGER)

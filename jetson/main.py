@@ -9,8 +9,7 @@ MSG_HEADER_LEN = 3
 MSG_FOOTER_LEN = 3
 END_MSG_SYMBOL = b"<<\n"
 HUB_TIMESTAMP = b"H01"
-CAM_RECORDER_START = b"H02"
-CAM_RECORDER_STOP = b"H03"
+CAM_RECORDER_STOP = b"H02"
 
 
 class Logger:
@@ -45,12 +44,13 @@ def main():
         log.write("Could not connect Lego hub on COM port!")
         return
 
+    video_capture = cv2.VideoCapture(0)
+    if not (video_capture and video_capture.isOpened()):
+        return
+
     start_time = int(now() * 10**6)
     record_dir = "/dev/camera_frames_{}".format(start_time)
-
     os.makedirs(record_dir, exist_ok=True)
-    log.write(CAM_RECORDER_START)
-    video_capture = cv2.VideoCapture(0)
 
     while True:
         sleep(0.02)
@@ -81,16 +81,16 @@ def main():
             while not msg_in[ts_end - 1].isdigit():
                 ts_end = ts_end - 1
 
-            log.write('after while')
             if not (ts_begin < ts_end):
+                log.write("Empty timestamp")
                 continue
 
-            log.write('after ts check')
             timestamp = msg_in[ts_begin:ts_end]
-            if not (video_capture and video_capture.isOpened()):
+            log.write(timestamp)
+
+            if not video_capture:
                 continue
 
-            log.write('video is opened')
             ret, frame = video_capture.read()
             if not ret:
                 continue
