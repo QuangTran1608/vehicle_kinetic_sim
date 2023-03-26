@@ -5,9 +5,10 @@ from time import time as now
 from time import sleep
 from serial import Serial
 
-HUB_TIMESTAMP = "H01"
-CAM_RECORDER_START = "H02"
-CAM_RECORDER_STOP = "H03"
+END_MSG_SYMBOL = b"<<\n"
+HUB_TIMESTAMP = b"H01"
+CAM_RECORDER_START = b"H02"
+CAM_RECORDER_STOP = b"H03"
 
 
 def main():
@@ -27,10 +28,19 @@ def main():
 
         msg_in = None
         while hub_com_port.in_waiting:
-            msg_in = hub_com_port.readline().strip()
-            print(msg_in.decode("utf-8"))
+            msg_in = hub_com_port.readline()
             hub_com_port.reset_input_buffer()
 
+        if not msg_in:
+            continue
+
+        if not msg_in.endswith(END_MSG_SYMBOL):
+            continue
+
+        msg_in = msg_in.decode("utf-8")
+        print(msg_in)
+
+        msg_in = msg_in.strip()[2:len(msg_in) - len(END_MSG_SYMBOL)]
         len_msg_in = len(msg_in)
         if not (0 < len_msg_in):
             continue

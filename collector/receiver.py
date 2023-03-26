@@ -6,6 +6,7 @@ from hub import motion, sound, button, USB_VCP
 from math import pi as PI
 from time import time as now
 
+END_MSG_SYMBOL = "<<\n"
 HUB_TIMESTAMP = "H01"
 CAM_RECORDER_START = "H02"
 CAM_RECORDER_STOP = "H03"
@@ -44,7 +45,7 @@ ANGULAR_SPEED = 360 * DRIVE_OUTPUT_GEAR * CONST_SPEED / (DRIVE_MOTOR_GEAR * WHEE
 
 DATA_LOG = "test_data_{}.txt".format(now())
 if jetson_com_port:
-    jetson_com_port.write("{}\n".format(CAM_RECORDER_START))
+    jetson_com_port.write("{}{}".format(CAM_RECORDER_START, END_MSG_SYMBOL))
 
 while not button.center.is_pressed():
     if rcv.is_connected():
@@ -73,10 +74,10 @@ while not button.center.is_pressed():
             )
 
     if jetson_com_port:
-        jetson_com_port.write("{}{}\n".format(HUB_TIMESTAMP, timestamp))
+        jetson_com_port.write("{}{}{}".format(HUB_TIMESTAMP, timestamp, END_MSG_SYMBOL))
 
     if thumb > 50:
         sound.beep(400, 25)
 
 if jetson_com_port:
-    jetson_com_port.write("{}\n".format(CAM_RECORDER_STOP))
+    jetson_com_port.write("{}{}".format(CAM_RECORDER_STOP, END_MSG_SYMBOL))
