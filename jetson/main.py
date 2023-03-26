@@ -69,24 +69,13 @@ def main():
 
         if msg_in.startswith(CAM_RECORDER_STOP):
             log.write("Stop recording")
-            msg_in = decode_msg(msg_in)
             cv2.destroyAllWindows()
             video_capture.release()
             video_capture = None
 
         elif msg_in.startswith(HUB_TIMESTAMP):
             log.write("Receive timestamp")
-            msg_in = decode_msg(msg_in)
-            ts_begin = len(HUB_TIMESTAMP)
-            ts_end = len(msg_in)
-            while not msg_in[ts_end - 1].isdigit():
-                ts_end = ts_end - 1
-
-            if not (ts_begin < ts_end):
-                log.write("Empty timestamp")
-                continue
-
-            timestamp = msg_in[ts_begin:ts_end]
+            timestamp = decode_msg(msg_in)
             log.write(timestamp)
 
             if not video_capture:
