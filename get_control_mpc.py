@@ -65,8 +65,6 @@ def get_control_mpc(image, velocity):
         target_orientation = np.arctan2(point_collection[1, 1:] - point_collection[1, 0:-1],
                                         point_collection[0, 1:] - point_collection[0, 0:-1])
         target_orientation = np.append(target_orientation, target_orientation[-1])
-        print('target_orientation: ', target_orientation)
-        print('target point: ', point_collection)
     except Exception as e:
         print(e)
         return None, None
