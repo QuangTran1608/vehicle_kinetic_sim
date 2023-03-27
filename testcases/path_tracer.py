@@ -44,12 +44,7 @@ with open(TEST_DATA, 'r') as f:
     rx.append(0.)
     ry.append(0.)
 
-    skip = False
     while True:
-        skip = ~skip
-        if skip:
-            continue
-
         line = f.readline()
         if not line:
             break
