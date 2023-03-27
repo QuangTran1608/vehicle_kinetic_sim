@@ -27,12 +27,6 @@ STEER_MOTOR_GEAR = 12  # teeth
 STEER_OUTPUT_GEAR = 20  # teeth
 
 WHEEL_DIAMETER = 5.6  # cm
-DRIVE_MOTOR_GEAR = 20  # teeth
-DRIVE_OUTPUT_GEAR = 28  # teeth
-
-
-def calc_motor_angular_speed(speed):
-    return 360 * DRIVE_OUTPUT_GEAR * speed / (DRIVE_MOTOR_GEAR * WHEEL_DIAMETER * PI)  # deg/s
 
 
 def drive_decode(prev, curr):
@@ -89,7 +83,7 @@ def main():
             if msg_in.startswith(JET_CTRLS):
                 steering = int(msg_in[2:5])
                 throttle = int(msg_in[5:8])
-                steer_motor.dc(steering)
+                steer_motor.run_target(120, STEER_DIR * steering * STEER_OUTPUT_GEAR / STEER_MOTOR_GEAR, wait=False)
                 drive_motor.dc(throttle)
 
         # send car dynamics to Jetson

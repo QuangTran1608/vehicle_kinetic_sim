@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from serial import Serial
+from math import pi as PI
 
 MSG_HEADER_LEN = 3
 MSG_FOOTER_LEN = 3
@@ -14,6 +15,14 @@ HUB_USS_DIST = b"H04"
 
 END_JET_MSG_SYMBOL = "<<"
 JET_CTRLS = "J1"
+
+WHEEL_DIAMETER = 5.6  # cm
+DRIVE_MOTOR_GEAR = 20  # teeth
+DRIVE_OUTPUT_GEAR = 28  # teeth
+MAX_RPM = 155 * (DRIVE_MOTOR_GEAR / DRIVE_OUTPUT_GEAR)
+MAX_SPEED = (MAX_RPM / 60) * WHEEL_DIAMETER * PI  # cm/s
+DEFAULT_SPEED = 10.  # cm/s
+TARGET_SPEED = DEFAULT_SPEED
 
 
 class Logger:
@@ -103,12 +112,15 @@ def main():
             obstacle_dist = float(obstacle_dist)  # cm
 
         # TODO: make decision
-        steering = 0  # -99 <= steering <= 99
-        throttle = 0  # -99 <= throttle <= 99
+        steering = 0
+        throttle = 0
+
+        # from percentage of max speed to power
+        throttle = int(100 * throttle / MAX_SPEED)
 
         # send controls to Lego hub
-        steering_str = str(steering).zfill(3)
-        throttle_str = str(throttle).zfill(3)
+        steering_str = str(steering).zfill(3)  # -99 <= steering <= 99  (degrees)
+        throttle_str = str(throttle).zfill(3)  # -99 <= throttle <= 99  (percentage)
         ctrls = JET_CTRLS + steering_str + throttle_str + END_JET_MSG_SYMBOL
         hub_com_port.write(ctrls.encode("utf-8"))
 
