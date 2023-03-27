@@ -64,11 +64,13 @@ def main():
         log.write("Could not open camera!")
         return
 
+    from get_control_fuzzy import FuzzyController
+    controller = FuzzyController()
+
     while True:
         ret, frame = video_capture.read()
-        if ret:
-            # TODO: process video frame here (asynchronously ???)
-            pass
+        if not ret:
+            continue
 
         # receive data from Lego hub
         msg_in = None
@@ -111,12 +113,10 @@ def main():
 
             obstacle_dist = float(obstacle_dist)  # cm
 
-        # TODO: make decision
-        steering = 0
-        throttle = 0
-
-        # from percentage of max speed to power
-        throttle = int(100 * throttle / MAX_SPEED)
+        # Calculate controls
+        control = controller.get_control_fuzzy(frame, TARGET_SPEED)
+        steering = np.clip(np.degrees(control[0][1]), -99, 99)
+        throttle = np.clip(int(100 * control[0][0] / MAX_SPEED), -99, 99)
 
         # send controls to Lego hub
         steering_str = str(steering).zfill(3)  # -99 <= steering <= 99  (degrees)
