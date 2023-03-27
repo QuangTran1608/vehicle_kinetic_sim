@@ -57,6 +57,7 @@ class MPCController(BaseController):
         tmp_steer_prev = control[self.horizon:-1]
         tmp_steer_curr = control[self.horizon+1:]
         ret += np.sum(cost_steering(tmp_steer_prev, tmp_steer_curr))
+        self.current_states = current_sim_state
         return ret
 
     def set_expected_state(self, target_pos, target_yaw):
@@ -65,11 +66,12 @@ class MPCController(BaseController):
 
     def get_control(self, velocity):
         init_control = np.zeros(shape=(self.horizon*2))
-        self.current_states = (0, 0, math.pi/2, velocity, 0) 
-        solution = minimize(self.calc_cost,
-                            init_control,
-                            method='SLSQP',
-                            bounds=self.bounds,
-                            tol=1e-5)
+        self.current_states = (0, 0, math.pi/2, velocity, 0)
+        for i in range(self.sim_steps):
+            solution = minimize(self.calc_cost,
+                                init_control,
+                                method='SLSQP',
+                                bounds=self.bounds,
+                                tol=1e-5)
         print(solution)
         return solution.x
