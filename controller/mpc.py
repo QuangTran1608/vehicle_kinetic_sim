@@ -29,22 +29,20 @@ class Obstacle():
                 cost += self.amp_collide_radius*(self.collide_radius - dist_center_obs) ** 2
         return cost
 
-
 def cost_2d_target_point(ego_loc, target_point):
     return dist(ego_loc, target_point)**2
 
-
 def cost_yaw(calculated_yaw, expected_yaw, scaler=2):
-    return scaler*math.tan(abs(norm_to_range(expected_yaw-calculated_yaw))/2)
-
+    return scaler*abs(math.tan(norm_to_range(expected_yaw-calculated_yaw))/2)
 
 def cost_steering(prev_steer, current_steer, scaler=2):
     return scaler*(current_steer - prev_steer)**2
 
 class MPCController(BaseController):
-    def __init__(self, horizon=5, sim_steps=30):
+    def __init__(self, model, horizon=5, sim_steps=30):
         self.horizon = horizon
         self.sim_steps = sim_steps
+        self.model = model
         self.bounds = np.array([-1, 1]*self.horizon + [-0.872, 0.872]*self.horizon).reshape(self.horizon*2, 2)
 
     def calc_cost(self, control):
@@ -52,7 +50,7 @@ class MPCController(BaseController):
         ret = 0
         for i in range(min(self.horizon, len(self.target_yaw))):
             ret += cost_2d_target_point(current_sim_state[:2], self.target_pos[:, i])
-            ret += cost_yaw(current_sim_state[2], self.target_yaw[i])
+            # ret += cost_yaw(current_sim_state[2], self.target_yaw[i])
             current_sim_state = self.model.simulate_next_step(*current_sim_state,
                                                               control[i],
                                                               control[i+self.horizon])
@@ -62,12 +60,12 @@ class MPCController(BaseController):
         return ret
 
     def set_expected_state(self, target_pos, target_yaw):
-        self.target_pos = target_pos[:self.horizon]
-        self.target_yaw = target_yaw[:self.horizon]
+        self.target_pos = target_pos[:min(self.horizon, len(target_pos))]
+        self.target_yaw = target_yaw[:min(self.horizon, len(target_yaw))]
 
     def get_control(self, velocity):
         init_control = np.zeros(shape=(self.horizon*2))
-        self.current_states = (0, 0, 0, velocity, 0) 
+        self.current_states = (0, 0, math.pi/2, velocity, 0) 
         solution = minimize(self.calc_cost,
                             init_control,
                             method='SLSQP',
